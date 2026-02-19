@@ -1,5 +1,4 @@
 import json
-import os
 import sys
 import time
 
@@ -13,6 +12,8 @@ class ProgressTracker:
         self.completed: list[str] = []
         self.failed: list[str] = []
         self._start_time = time.time()
+        self._last_line_length = 0
+        self._line_active = False
 
     def mark_completed(self, chapter_name: str):
         if chapter_name not in self.completed:
@@ -69,15 +70,28 @@ class ProgressTracker:
             eta = (elapsed / done) * (self.total - done)
             eta_str = _format_time(eta)
         else:
-            eta_str = "hesaplan\u0131yor..."
+            eta_str = "calculating..."
 
-        line = f"\r[{bar}] {done}/{self.total} (%{self.percentage:.0f})"
+        line = f"[{bar}] {done}/{self.total} ({self.percentage:.0f}%)"
         if current_chapter:
             line += f" - {current_chapter}"
         line += f" - ETA: {eta_str}"
 
-        sys.stdout.write(line + "  ")
+        # Pad with spaces when the new line is shorter to avoid stale tail text.
+        pad = max(self._last_line_length - len(line), 0)
+        sys.stdout.write("\r" + line + (" " * pad))
         sys.stdout.flush()
+        self._last_line_length = len(line)
+        self._line_active = True
+
+    def finish_line(self):
+        """Finalize the current progress line and move to a clean new line."""
+        if not self._line_active:
+            return
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        self._line_active = False
+        self._last_line_length = 0
 
 
 def _format_time(seconds: float) -> str:

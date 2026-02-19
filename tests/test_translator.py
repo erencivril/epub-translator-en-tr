@@ -29,14 +29,14 @@ def test_format_chunk():
 
 
 def test_parse_response_simple():
-    response = "[1] Merhaba Dünya\n[2] Bu bir test."
+    response = "[1] Hello World\n[2] This is a test."
     result = parse_response(response, count=2)
-    assert result[0] == "Merhaba Dünya"
-    assert result[1] == "Bu bir test."
+    assert result[0] == "Hello World"
+    assert result[1] == "This is a test."
 
 
 def test_parse_response_multiline():
-    response = "[1] Birinci satır\ndevam ediyor\n[2] İkinci öğe"
+    response = "[1] First line\ncontinues here\n[2] Second item"
     result = parse_response(response, count=2)
-    assert result[0] == "Birinci satır\ndevam ediyor"
-    assert result[1] == "İkinci öğe"
+    assert result[0] == "First line\ncontinues here"
+    assert result[1] == "Second item"

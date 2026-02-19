@@ -7,4 +7,7 @@ __pycache__/
 .python-version
 *.progress.json
 docs/plans/
+# Local e-book files and translated outputs
+*.epub
+!tests/*.epub
 venv/

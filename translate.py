@@ -24,30 +24,30 @@ def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(
-        description="EPUB dosyalarını İngilizce'den Türkçe'ye çevirir."
+        description="Translate EPUB files from English to Turkish."
     )
-    parser.add_argument("input", help="Çevrilecek EPUB dosyasının yolu")
-    parser.add_argument("-o", "--output", help="Çıktı EPUB dosyasının yolu")
+    parser.add_argument("input", help="Path to the input EPUB file")
+    parser.add_argument("-o", "--output", help="Path for the translated output EPUB")
     parser.add_argument(
-        "--model", default=DEFAULT_MODEL, help=f"OpenRouter model (varsayılan: {DEFAULT_MODEL})"
+        "--model", default=DEFAULT_MODEL, help=f"OpenRouter model (default: {DEFAULT_MODEL})"
     )
     parser.add_argument(
-        "--resume", action="store_true", help="Kaldığı yerden devam et"
+        "--resume", action="store_true", help="Resume from checkpoint if available"
     )
 
     args = parser.parse_args()
 
     # Validate input
     if not os.path.exists(args.input):
-        print(f"Hata: '{args.input}' dosyası bulunamadı.")
+        print(f"Error: input file not found: '{args.input}'")
         sys.exit(1)
 
     # API key check
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
-        print("Hata: OPENROUTER_API_KEY ayarlanmamış.")
-        print("  .env dosyasına OPENROUTER_API_KEY=sk-or-... ekleyin")
-        print("  veya: export OPENROUTER_API_KEY=sk-or-...")
+        print("Error: OPENROUTER_API_KEY is not set.")
+        print("  Add OPENROUTER_API_KEY=sk-or-... to your .env file")
+        print("  or run: export OPENROUTER_API_KEY=sk-or-...")
         sys.exit(1)
 
     # Output path
@@ -61,13 +61,13 @@ def main():
     base_name = os.path.splitext(os.path.basename(args.input))[0]
     progress_path = os.path.join(os.path.dirname(args.input) or ".", f"{base_name}.progress.json")
 
-    print(f"Kaynak: {args.input}")
-    print(f"Çıktı:  {output_path}")
+    print(f"Input:  {args.input}")
+    print(f"Output: {output_path}")
     print(f"Model:  {args.model}")
     print()
 
     # Read EPUB
-    print("EPUB okunuyor...")
+    print("Reading EPUB...")
     book = read_epub(args.input)
 
     # Fix missing uid on TOC Link items (known ebooklib issue)
@@ -78,23 +78,23 @@ def main():
     chapters = get_chapters(book)
 
     if not chapters:
-        print("Hata: EPUB'da çevrilecek bölüm bulunamadı.")
+        print("Error: no translatable document chapters found in EPUB.")
         sys.exit(1)
 
-    print(f"{len(chapters)} bölüm bulundu.\n")
+    print(f"Found {len(chapters)} chapters.\n")
 
     # Setup progress tracker
     if args.resume and os.path.exists(progress_path):
         tracker = ProgressTracker.load(progress_path)
         skipped = len(tracker.completed)
-        print(f"Kaldığı yerden devam ediliyor ({skipped} bölüm tamamlanmış).\n")
+        print(f"Resuming from checkpoint ({skipped} chapters already completed).\n")
     else:
         tracker = ProgressTracker(
             progress_path, total=len(chapters), source=args.input, model=args.model
         )
 
     # Translate each chapter
-    for i, chapter in enumerate(chapters):
+    for chapter in chapters:
         chapter_name = chapter.get_name()
 
         if tracker.is_completed(chapter_name):
@@ -107,6 +107,7 @@ def main():
 
         if not nodes:
             tracker.mark_completed(chapter_name)
+            tracker.print_progress(chapter_name)
             continue
 
         try:
@@ -119,32 +120,34 @@ def main():
             new_html = replace_text_nodes(html, nodes, translations)
             chapter.set_content(new_html.encode("utf-8"))
             tracker.mark_completed(chapter_name)
+            tracker.print_progress(chapter_name)
 
         except Exception as e:
-            print(f"\nHata ({chapter_name}): {e}")
+            tracker.finish_line()
+            print(f"Error in chapter '{chapter_name}': {e}")
             tracker.mark_failed(chapter_name)
             continue
 
-    print()
+    tracker.finish_line()
     print()
 
     # Save translated EPUB
-    print(f"EPUB kaydediliyor: {output_path}")
+    print(f"Saving translated EPUB: {output_path}")
     save_epub(book, output_path)
 
     # Report
     done = len(tracker.completed)
     failed = len(tracker.failed)
-    print(f"\nTamamlandı! {done}/{len(chapters)} bölüm çevrildi.", end="")
+    print(f"\nDone! Translated {done}/{len(chapters)} chapters.", end="")
     if failed:
-        print(f" ({failed} bölüm başarısız)")
+        print(f" ({failed} failed)")
     else:
         print()
 
     # Clean up progress file on full success
     if failed == 0 and os.path.exists(progress_path):
         os.remove(progress_path)
-        print("İlerleme dosyası temizlendi.")
+        print("Progress file removed.")
 
 
 if __name__ == "__main__":

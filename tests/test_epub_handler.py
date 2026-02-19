@@ -31,10 +31,10 @@ def test_extract_skips_empty():
 def test_replace_text_nodes():
     html = "<html><body><h1>Hello</h1><p>World</p></body></html>"
     nodes = extract_text_nodes(html)
-    translations = {0: "Merhaba", 1: "Dünya"}
+    translations = {0: "Hi", 1: "Earth"}
     result = replace_text_nodes(html, nodes, translations)
-    assert "Merhaba" in result
-    assert "Dünya" in result
+    assert "Hi" in result
+    assert "Earth" in result
     assert "<h1>" in result
     assert "<p>" in result
     assert "Hello" not in result
