@@ -10,6 +10,11 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 _SKIP_NS_TYPES = (Comment, CData, ProcessingInstruction)
 
 
+def _is_translatable(text: str) -> bool:
+    """Check if a text node contains translatable content (not just whitespace)."""
+    return bool(text.strip())
+
+
 def extract_text_nodes(html: str) -> list[dict]:
     """Extract all meaningful text nodes from HTML, preserving order."""
     soup = BeautifulSoup(html, "lxml")
@@ -22,7 +27,7 @@ def extract_text_nodes(html: str) -> list[dict]:
             if element.parent and element.parent.name in ("script", "style"):
                 continue
             text = str(element)
-            if not text.strip():
+            if not _is_translatable(text):
                 continue
             nodes.append({
                 "index": len(nodes),
@@ -44,10 +49,18 @@ def replace_text_nodes(html: str, nodes: list[dict], translations: dict[int, str
             if element.parent and element.parent.name in ("script", "style"):
                 continue
             text = str(element)
-            if not text.strip():
+            if not _is_translatable(text):
                 continue
             if text_node_idx in translations:
-                element.replace_with(NavigableString(translations[text_node_idx]))
+                translated = translations[text_node_idx]
+                # Preserve leading/trailing whitespace from original text
+                original = text
+                leading = original[:len(original) - len(original.lstrip())]
+                trailing = original[len(original.rstrip()):]
+                translated_stripped = translated.strip()
+                if translated_stripped:
+                    translated = leading + translated_stripped + trailing
+                element.replace_with(NavigableString(translated))
             text_node_idx += 1
 
     return str(soup)
