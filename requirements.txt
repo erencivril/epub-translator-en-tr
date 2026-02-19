@@ -1,0 +1,5 @@
+ebooklib
+beautifulsoup4
+httpx
+python-dotenv
+lxml
