@@ -1,7 +1,9 @@
 # epub_handler.py
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup, NavigableString, Comment, CData, ProcessingInstruction
 import ebooklib
 from ebooklib import epub
+
+_SKIP_NS_TYPES = (Comment, CData, ProcessingInstruction)
 
 
 def extract_text_nodes(html: str) -> list[dict]:
@@ -10,6 +12,8 @@ def extract_text_nodes(html: str) -> list[dict]:
     nodes = []
 
     for element in soup.descendants:
+        if isinstance(element, _SKIP_NS_TYPES):
+            continue
         if isinstance(element, NavigableString):
             if element.parent and element.parent.name in ("script", "style"):
                 continue
@@ -30,6 +34,8 @@ def replace_text_nodes(html: str, nodes: list[dict], translations: dict[int, str
 
     text_node_idx = 0
     for element in list(soup.descendants):
+        if isinstance(element, _SKIP_NS_TYPES):
+            continue
         if isinstance(element, NavigableString):
             if element.parent and element.parent.name in ("script", "style"):
                 continue

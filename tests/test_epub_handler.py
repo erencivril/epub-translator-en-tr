@@ -25,7 +25,7 @@ def test_extract_skips_empty():
     assert "Real text" in texts
     # Whitespace-only nodes should be skipped
     for t in texts:
-        assert t.strip() != "" or t == " "
+        assert t.strip() != ""
 
 
 def test_replace_text_nodes():
@@ -39,6 +39,23 @@ def test_replace_text_nodes():
     assert "<p>" in result
     assert "Hello" not in result
     assert "World" not in result
+
+
+def test_extract_skips_script_and_style():
+    html = (
+        "<html><head><style>body { color: red; }</style></head>"
+        "<body><script>var x = 1;</script><p>Real text</p></body></html>"
+    )
+    nodes = extract_text_nodes(html)
+    texts = [n["text"] for n in nodes]
+    assert texts == ["Real text"]
+
+
+def test_extract_skips_html_comments():
+    html = "<html><body><!-- copyright --><p>Real text</p></body></html>"
+    nodes = extract_text_nodes(html)
+    texts = [n["text"] for n in nodes]
+    assert texts == ["Real text"]
 
 
 def test_replace_preserves_structure():
