@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # translate.py
-"""EPUB Translator - Translates EPUB files from English to Turkish using AI."""
+"""EPUB Translator - Translates EPUB files from English to Turkish using OpenRouter API."""
 
 import argparse
 import os
