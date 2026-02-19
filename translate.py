@@ -7,6 +7,7 @@ import os
 import sys
 
 from dotenv import load_dotenv
+from ebooklib import epub
 
 from epub_handler import (
     extract_text_nodes,
@@ -68,6 +69,12 @@ def main():
     # Read EPUB
     print("EPUB okunuyor...")
     book = read_epub(args.input)
+
+    # Fix missing uid on TOC Link items (known ebooklib issue)
+    for i, item in enumerate(book.toc):
+        if isinstance(item, epub.Link) and item.uid is None:
+            item.uid = f"toc_{i}"
+
     chapters = get_chapters(book)
 
     if not chapters:

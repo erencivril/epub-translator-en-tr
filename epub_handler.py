@@ -1,7 +1,11 @@
 # epub_handler.py
-from bs4 import BeautifulSoup, NavigableString, Comment, CData, ProcessingInstruction
+import warnings
+
+from bs4 import BeautifulSoup, NavigableString, Comment, CData, ProcessingInstruction, XMLParsedAsHTMLWarning
 import ebooklib
 from ebooklib import epub
+
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 _SKIP_NS_TYPES = (Comment, CData, ProcessingInstruction)
 
