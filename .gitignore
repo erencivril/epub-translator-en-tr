@@ -6,4 +6,5 @@ __pycache__/
 !.env.example
 .python-version
 *.progress.json
+docs/plans/
 venv/
